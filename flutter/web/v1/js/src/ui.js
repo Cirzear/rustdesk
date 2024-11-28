@@ -1,9 +1,44 @@
 import "./style.css";
 import "./connection";
 import * as globals from "./globals";
+function queryParams (href = window.location.href, needDecode = true) {
+  const reg = /([^&=]+)=([\w\W]*?)(&|$|#)/g
+  const { search, hash } = new URL(href);
+  const args = [search, hash];
+  let obj = {};
+  for (let i = 0; i < args.length; i++) {
+    const str = args[i];
+    if (str) {
+      const s = str.replace(/#|\//g, '')
+      const arr = s.split('?')
+      if (arr.length > 1) {
+        for (let i = 1; i < arr.length; i++) {
+          let res;
+          while ((res = reg.exec(arr[i]))) {
+            obj[res[1]] = needDecode ? decodeURIComponent(res[2]) : res[2]
+          }
+        }
+      }
+    }
+  }
+  return obj;
+}
+
+const locationHref = window.location.href;
+const params = queryParams(locationHref);
+const hrefKey = params.key || '';
+const hrefRemoteId = params.remoteId || ''
+const hrefHost = params.host || '';
+const hrefId = params.id || '';
+const hrefApiServer = params.apiServer || '';
+localStorage.setItem('remote-id', hrefRemoteId);
+localStorage.setItem('key', hrefKey);
+localStorage.setItem('custom-rendezvous-server', hrefHost);
+localStorage.setItem('id', hrefId);
+localStorage.setItem('api-server', hrefApiServer);
+console.log({ hrefKey, hrefRemoteId, hrefHost, hrefId, hrefApiServer });
 
 const app = document.querySelector('#app');
-
 if (app) {
   app.innerHTML = `
   <div id="connect" style="text-align: center"><table style="display: inline-block">
@@ -37,18 +72,18 @@ if (app) {
     const id = document.querySelector('#id');
     id.value = localStorage.getItem('id');
     const key = document.querySelector('#key');
-    key.value = localStorage.getItem('key');
+    key.value = hrefKey || localStorage.getItem('key');
     player = YUVCanvas.attach(document.getElementById('player'));
     // globals.sendOffCanvas(document.getElementById('player'));
   };
 
   window.connect = () => {
     const host = document.querySelector('#host');
-    localStorage.setItem('custom-rendezvous-server', host.value);
+    localStorage.setItem('custom-rendezvous-server', hrefHost || host.value);
     const id = document.querySelector('#id');
-    localStorage.setItem('id', id.value);
+    localStorage.setItem('id',hrefId || id.value);
     const key = document.querySelector('#key');
-    localStorage.setItem('key', key.value);
+    localStorage.setItem('key',hrefKey || key.value);
     const func = async () => {
       const conn = globals.newConn();
       conn.setMsgbox(msgbox);

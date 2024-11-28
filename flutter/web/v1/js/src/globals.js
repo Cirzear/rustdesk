@@ -5,6 +5,35 @@ import { loadVp9 } from "./codec";
 import { checkIfRetry, version } from "./gen_js_from_hbb";
 import { initZstd, translate } from "./common";
 import PCMPlayer from "pcm-player";
+import YUVCanvas from 'yuv-canvas';
+
+function queryParams (href = window.location.href, needDecode = true) {
+  const reg = /([^&=]+)=([\w\W]*?)(&|$|#)/g
+  const { search, hash } = new URL(href);
+  const args = [search, hash];
+  let obj = {};
+  for (let i = 0; i < args.length; i++) {
+    const str = args[i];
+    if (str) {
+      const s = str.replace(/#|\//g, '')
+      const arr = s.split('?')
+      if (arr.length > 1) {
+        for (let i = 1; i < arr.length; i++) {
+          let res;
+          while ((res = reg.exec(arr[i]))) {
+            obj[res[1]] = needDecode ? decodeURIComponent(res[2]) : res[2]
+          }
+        }
+      }
+    }
+  }
+  return obj;
+}
+
+const locationHref = window.location.href;
+const params = queryParams(locationHref);
+const hrefKey = params.key || '';
+const hrefRemoteId = params.remoteId || ''
 
 window.curConn = undefined;
 window.isMobile = () => {
@@ -180,7 +209,7 @@ export function decrypt(signed, nonce, key) {
 window.setByName = (name, value) => {
   switch (name) {
     case 'remote_id':
-      localStorage.setItem('remote-id', value);
+      localStorage.setItem('remote-id', hrefRemoteId || value);
       break;
     case 'connect':
       newConn();
