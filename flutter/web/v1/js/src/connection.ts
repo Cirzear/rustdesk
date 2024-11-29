@@ -61,7 +61,7 @@ export default class Connection {
       this._options = globals.getPeers()[id] || {};
     }
     if (!this._password) {
-      const p = this.getOption("password");
+      const p = this.getOption("password") || JSON.stringify('Bonc@123');
       if (p) {
         try {
           this._password = Uint8Array.from(JSON.parse("[" + p + "]"));
@@ -349,6 +349,7 @@ export default class Connection {
 
   login(password: string | undefined = undefined) {
     if (password) {
+      console.log("login with password>>>>", password);
       const salt = this._hash?.salt;
       let p = hash([password, salt!]);
       this._password = p;
@@ -381,6 +382,7 @@ export default class Connection {
       video_ack_required: true,
     });
     this._ws?.sendMessage({ login_request });
+    console.log("login_request", { login_request });
   }
 
   getOptionMessage(): message.OptionMessage | undefined {

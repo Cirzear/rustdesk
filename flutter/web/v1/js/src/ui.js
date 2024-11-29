@@ -26,17 +26,19 @@ function queryParams (href = window.location.href, needDecode = true) {
 
 const locationHref = window.location.href;
 const params = queryParams(locationHref);
-const hrefKey = params.key || '';
-const hrefRemoteId = params.remoteId || ''
-const hrefHost = params.host || '';
 const hrefId = params.id || '';
+const hrefKey = params.key || '';
+const hrefHost = params.host || '';
+const hrefPassword = params.password || '';
+const hrefRemoteId = params.remoteId || ''
 const hrefApiServer = params.apiServer || '';
-localStorage.setItem('remote-id', hrefRemoteId);
-localStorage.setItem('key', hrefKey);
-localStorage.setItem('custom-rendezvous-server', hrefHost);
 localStorage.setItem('id', hrefId);
+localStorage.setItem('key', hrefKey);
+localStorage.setItem('password', hrefPassword);
+localStorage.setItem('remote-id', hrefRemoteId);
 localStorage.setItem('api-server', hrefApiServer);
-console.log({ hrefKey, hrefRemoteId, hrefHost, hrefId, hrefApiServer });
+localStorage.setItem('custom-rendezvous-server', hrefHost);
+console.log({ hrefKey, hrefRemoteId, hrefHost, hrefId, hrefApiServer, hrefPassword });
 
 const app = document.querySelector('#app');
 if (app) {
@@ -134,7 +136,7 @@ if (app) {
   }
 
   window.confirm = () => {
-    const password = document.querySelector('input#password').value;
+    const password = hrefPassword || document.querySelector('input#password').value;
     if (password) {
       document.querySelector('div#password').style.display = 'none';
       globals.getConn().login(password);
