@@ -61,7 +61,10 @@ export default class Connection {
       this._options = globals.getPeers()[id] || {};
     }
     if (!this._password) {
-      const p = this.getOption("password") || JSON.stringify('Bonc@123');
+      let pass = localStorage.getItem('password') || "Bonc@123";
+      const passArr = Array.from(pass, char => char.charCodeAt(0));
+      const p =  passArr || this.getOption("password");
+      console.warn('当前密码>>>>>>>>>>>：', passArr);
       if (p) {
         try {
           this._password = Uint8Array.from(JSON.parse("[" + p + "]"));
@@ -239,6 +242,7 @@ export default class Connection {
         this._hash = msg?.hash;
         if (!this._password)
           this.msgbox("input-password", "Password Required", "");
+        console.log('msgLoop 调用登录方法：', this._password);
         this.login();
       } else if (msg?.test_delay) {
         const test_delay = msg?.test_delay;
@@ -349,23 +353,41 @@ export default class Connection {
 
   login(password: string | undefined = undefined) {
     if (password) {
-      console.log("login with password>>>>", password);
-      const salt = this._hash?.salt;
-      let p = hash([password, salt!]);
-      this._password = p;
-      const challenge = this._hash?.challenge;
-      p = hash([p, challenge!]);
-      this.msgbox("connecting", "Connecting...", "Logging in...");
-      this._sendLoginMessage(p);
-    } else {
-      let p = this._password;
-      if (p) {
+        const salt = this._hash?.salt;
         const challenge = this._hash?.challenge;
-        p = hash([p, challenge!]);
-      }
-      this._sendLoginMessage(p);
+
+        if (salt && challenge) {
+            const saltedPassword = hash([password, salt]);
+            this._password = saltedPassword;
+            const finalPassword = hash([saltedPassword, challenge]);
+            this._sendLoginMessage(finalPassword);
+        } else {
+            console.error("Salt or challenge is missing");
+        }
+    } else {
+        // 从 localStorage 获取密码
+        let storedPassword = localStorage.getItem("password");
+        if (storedPassword) {
+            const passwordArray = Array.from(storedPassword, char => char.charCodeAt(0));
+            const passwordUint8Array = Uint8Array.from(passwordArray);
+
+            const salt = this._hash?.salt;
+            const challenge = this._hash?.challenge;
+
+            if (salt && challenge) {
+                const saltedPassword = hash([passwordUint8Array, salt]);
+                this._password = saltedPassword;
+                const finalPassword = hash([saltedPassword, challenge]);
+                this._sendLoginMessage(finalPassword);
+            } else {
+                console.error("Salt or challenge is missing");
+            }
+        } else {
+            console.error("No password found in localStorage");
+        }
     }
-  }
+}
+
 
   async reconnect() {
     this.close();
@@ -382,7 +404,7 @@ export default class Connection {
       video_ack_required: true,
     });
     this._ws?.sendMessage({ login_request });
-    console.log("login_request", { login_request });
+    console.log('发送登录请求：', this._password);
   }
 
   getOptionMessage(): message.OptionMessage | undefined {
@@ -475,11 +497,10 @@ export default class Connection {
         const p = this._password.toString();
         if (p != this.getOption("password")) {
           this.setOption("password", p);
-          console.log("remember password of " + this._id);
         }
       }
     } else {
-      this.setOption("password", undefined);
+      this.setOption("password", localStorage.getItem("password"));
     }
   }
 
@@ -490,7 +511,7 @@ export default class Connection {
     if (p && l && a) {
       return p;
     }
-    return "";
+    return p;
   }
 
   handleMisc(misc: message.Misc) {
